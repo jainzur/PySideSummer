@@ -18,7 +18,7 @@ Code is under the GPL license: http://www.gnu.org/copyleft/gpl.html
 import math
 import random
 import sys
-from PySide import QtGui, QtCore
+from PyQt5 import QtGui, QtCore,QtWidgets
 
 
 SCENESIZE = 500
@@ -27,7 +27,7 @@ INTERVAL = 200
 Running = False
 
 
-class Head(QtGui.QGraphicsItem):
+class Head(QtWidgets.QGraphicsItem):
 
     Rect = QtCore.QRectF(-30, -20, 60, 40)
 
@@ -56,10 +56,10 @@ class Head(QtGui.QGraphicsItem):
         painter.setBrush(QtGui.QBrush(self.color))
         painter.drawEllipse(Head.Rect)
         
-        levelOfDetail = QtGui.QStyleOptionGraphicsItem.levelOfDetailFromTransform(
+        levelOfDetail = QtWidgets.QStyleOptionGraphicsItem.levelOfDetailFromTransform(
                 painter.worldTransform())
                 
-        print "levelOfDetail: ", levelOfDetail
+        print ("levelOfDetail: ", levelOfDetail)
         if levelOfDetail > 0.5: # Outer eyes
             painter.setBrush(QtGui.QBrush(QtCore.Qt.yellow))
             painter.drawEllipse(-12, -19, 8, 8)
@@ -94,9 +94,11 @@ class Head(QtGui.QGraphicsItem):
             else:
                 item.color.setBlue(min(255, item.color.blue() + 1))
 
+    def rotate(self,angle):
+        self.setRotation(self.rotation()+angle)
 
 
-class Segment(QtGui.QGraphicsItem):
+class Segment(QtWidgets.QGraphicsItem):
 
     def __init__(self, color, offset, parent):
         super(Segment, self).__init__(parent)
@@ -119,6 +121,8 @@ class Segment(QtGui.QGraphicsItem):
         self.timer.timeout.connect(self.timeout)
         self.timer.start(INTERVAL)
 
+    def rotate(self,angle):
+        self.setRotation(self.rotation()+angle)
 
     def boundingRect(self):
         return self.path.boundingRect()
@@ -132,7 +136,7 @@ class Segment(QtGui.QGraphicsItem):
         painter.setPen(QtCore.Qt.NoPen)
         painter.setBrush(QtGui.QBrush(self.color))
         
-        levelOfDetail = QtGui.QStyleOptionGraphicsItem.levelOfDetailFromTransform(
+        levelOfDetail = QtWidgets.QStyleOptionGraphicsItem.levelOfDetailFromTransform(
                 painter.worldTransform())
                 
         if levelOfDetail < 0.9:
@@ -157,28 +161,28 @@ class Segment(QtGui.QGraphicsItem):
         self.rotate(self.angle)
 
 
-class MainForm(QtGui.QDialog):
+class MainForm(QtWidgets.QDialog):
 
     def __init__(self, parent=None):
         super(MainForm, self).__init__(parent)
 
-        self.scene = QtGui.QGraphicsScene(self)
+        self.scene = QtWidgets.QGraphicsScene(self)
         self.scene.setSceneRect(0, 0, SCENESIZE, SCENESIZE)
-        self.scene.setItemIndexMethod(QtGui.QGraphicsScene.NoIndex)
-        self.view = QtGui.QGraphicsView()
+        self.scene.setItemIndexMethod(QtWidgets.QGraphicsScene.NoIndex)
+        self.view = QtWidgets.QGraphicsView()
         self.view.setRenderHint(QtGui.QPainter.Antialiasing)
         self.view.setScene(self.scene)
         self.view.setFocusPolicy(QtCore.Qt.NoFocus)
-        zoomSlider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        zoomSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         zoomSlider.setRange(5, 200)
         zoomSlider.setValue(100)
-        self.pauseButton = QtGui.QPushButton("Pa&use")
-        quitButton = QtGui.QPushButton("&Quit")
+        self.pauseButton = QtWidgets.QPushButton("Pa&use")
+        quitButton = QtWidgets.QPushButton("&Quit")
         quitButton.setFocusPolicy(QtCore.Qt.NoFocus)
 
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.view)
-        bottomLayout = QtGui.QHBoxLayout()
+        bottomLayout = QtWidgets.QHBoxLayout()
         bottomLayout.addWidget(self.pauseButton)
         bottomLayout.addWidget(zoomSlider)
         bottomLayout.addWidget(quitButton)
@@ -253,9 +257,9 @@ class MainForm(QtGui.QDialog):
             del item
 
 
-app = QtGui.QApplication(sys.argv)
+app = QtWidgets.QApplication(sys.argv)
 form = MainForm()
-rect = QtGui.QApplication.desktop().availableGeometry()
+rect = QtWidgets.QApplication.desktop().availableGeometry()
 form.resize(int(rect.width() * 0.75), int(rect.height() * 0.9))
 form.show()
 app.exec_()
