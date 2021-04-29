@@ -13,14 +13,14 @@ Code is under the GPL license: http://www.gnu.org/copyleft/gpl.html
 """
 import os
 import sys
-from PySide import QtGui, QtCore
-import resource_rc
+from PyQt5 import QtGui, QtCore,QtWidgets
+import resources
 
 
 __version__ = "1.0.1"
 
 
-class MainWindow(QtGui.QMainWindow):
+class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, filename=None, parent=None):
         super(MainWindow, self).__init__(parent)
@@ -76,7 +76,7 @@ class MainWindow(QtGui.QMainWindow):
 
         self.editor.selectionChanged.connect(self.updateUi)
         self.editor.document().modificationChanged.connect(self.updateUi)
-        QtGui.QApplication.clipboard().dataChanged.connect(self.updateUi)
+        QtWidgets.QApplication.clipboard().dataChanged.connect(self.updateUi)
 
         self.resize(800, 600)
         self.setWindowTitle("Python Editor")
@@ -99,7 +99,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def createAction(self, text, slot=None, shortcut=None, icon=None,
                      tip=None, checkable=False, signal="triggered"):
-        action = QtGui.QAction(text, self)
+        action = QtWidgets.QAction(text, self)
         if icon is not None:
             action.setIcon(QtGui.QIcon(":/{}.png".format(icon)))
         if shortcut is not None:
@@ -129,14 +129,14 @@ class MainWindow(QtGui.QMainWindow):
 
     def okToContinue(self):
         if self.editor.document().isModified():
-            reply = QtGui.QMessageBox.question(self,
+            reply = QtWidgets.QMessageBox.question(self,
                             "Python Editor - Unsaved Changes",
                             "Save unsaved changes?",
-                            QtGui.QMessageBox.Yes|QtGui.QMessageBox.No|
-                            QtGui.QMessageBox.Cancel)
-            if reply == QtGui.QMessageBox.Cancel:
+                            QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No|
+                            QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.Cancel:
                 return False
-            elif reply == QtGui.QMessageBox.Yes:
+            elif reply == QtWidgets.QMessageBox.Yes:
                 return self.fileSave()
         return True
 
@@ -198,7 +198,7 @@ class MainWindow(QtGui.QMainWindow):
             stream << self.editor.toPlainText()
             self.editor.document().setModified(False)
         except EnvironmentError as e:
-            QtGui.QMessageBox.warning(self, "Python Editor -- Save Error",
+            QtWidgets.QMessageBox.warning(self, "Python Editor -- Save Error",
                     "Failed to save {}: {}".format(self.filename, e))
             return False
         finally:
@@ -209,7 +209,7 @@ class MainWindow(QtGui.QMainWindow):
 
     def fileSaveAs(self):
         filename = self.filename if self.filename is not None else "."
-        filename = QtGui.QFileDialog.getSaveFileName(self,
+        filename = QtWidgets.QFileDialog.getSaveFileName(self,
                 "Python Editor -- Save File As", filename,
                 "Python files (*.py *.pyw)")[0]
         if filename:
@@ -220,7 +220,7 @@ class MainWindow(QtGui.QMainWindow):
         return False
 
 
-class TextEdit(QtGui.QTextEdit):
+class TextEdit(QtWidgets.QTextEdit):
 
     def __init__(self, parent=None):
         super(TextEdit, self).__init__(parent)
@@ -232,7 +232,7 @@ class TextEdit(QtGui.QTextEdit):
             cursor = self.textCursor()
             cursor.insertText("    ")
             return True
-        return QtGui.QTextEdit.event(self, event)
+        return QtWidgets.QTextEdit.event(self, event)
         
 class PythonHighlighter(QtGui.QSyntaxHighlighter):
 
@@ -300,7 +300,7 @@ class PythonHighlighter(QtGui.QSyntaxHighlighter):
                 self.setFormat(i, len(text), self.stringFormat)
                 
 def main():
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     app.setWindowIcon(QtGui.QIcon(":/icon.png"))
     fname = None
     if len(sys.argv) > 1:

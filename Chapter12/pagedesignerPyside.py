@@ -25,7 +25,7 @@ Code is under the GPL license: http://www.gnu.org/copyleft/gpl.html
 import functools
 import random
 import sys
-from PySide import QtGui, QtCore
+from PyQt5 import QtGui, QtCore,QtWidgets,QtPrintSupport
        
 MAC = "qt_mac_set_native_menubar" in dir()
 
@@ -39,24 +39,24 @@ FileVersion = 1
 Dirty = False #uses global to tell if it has been changed
 
 
-class GraphicsView(QtGui.QGraphicsView):
+class GraphicsView(QtWidgets.QGraphicsView):
 
     def __init__(self, parent=None):
         super(GraphicsView, self).__init__(parent)
-        self.setDragMode(QtGui.QGraphicsView.RubberBandDrag)
+        self.setDragMode(QtWidgets.QGraphicsView.DragMode.RubberBandDrag)
         self.setRenderHint(QtGui.QPainter.Antialiasing)
         self.setRenderHint(QtGui.QPainter.TextAntialiasing)
 
 
     def wheelEvent(self, event):
-        factor = 1.41 ** (-event.delta() / 240.0)
+        factor = 1.41 ** (event.angleDelta().y() / 240.0)
         self.scale(factor, factor)
 
 
-class MainForm(QtGui.QDialog):
+class MainForm(QtWidgets.QDialog):
 
     def __init__(self, parent=None):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
 
         self.filename = ""
         self.copiedItem = QtCore.QByteArray()
@@ -65,16 +65,16 @@ class MainForm(QtGui.QDialog):
         self.addOffset = 5
         self.borders = []
 
-        self.printer = QtGui.QPrinter(QtGui.QPrinter.HighResolution)
-        self.printer.setPageSize(QtGui.QPrinter.Letter)
+        self.printer = QtPrintSupport.QPrinter(QtPrintSupport.QPrinter.PrinterMode.HighResolution)
+        self.printer.setPageSize(QtGui.QPageSize())
 
         self.view = GraphicsView()
-        self.scene = QtGui.QGraphicsScene(self)
+        self.scene = QtWidgets.QGraphicsScene(self)
         self.scene.setSceneRect(0, 0, PageSize[0], PageSize[1])
         self.addBorders()
         self.view.setScene(self.scene)
 
-        buttonLayout = QtGui.QVBoxLayout()
+        buttonLayout = QtWidgets.QVBoxLayout()
         for text, slot in (
                 ("Add &Text", self.addText),
                 ("Add &Box", self.addBox),
@@ -88,9 +88,9 @@ class MainForm(QtGui.QDialog):
                 ("&Open...", self.open),
                 ("&Save", self.save),
                 ("&Quit", self.accept)):
-            button = QtGui.QPushButton(text)
+            button = QtWidgets.QPushButton(text)
             if not MAC:
-                button.setFocusPolicy(QtCore.Qt.NoFocus)
+                button.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
             button.clicked.connect(slot) #self.connect(button, SIGNAL("clicked()"), slot)
             if text == "Pri&nt...":
                 buttonLayout.addStretch(5)
@@ -99,14 +99,13 @@ class MainForm(QtGui.QDialog):
             buttonLayout.addWidget(button)
         buttonLayout.addStretch()
 
-        layout = QtGui.QHBoxLayout()
+        layout = QtWidgets.QHBoxLayout()
         layout.addWidget(self.view, 1)
         layout.addLayout(buttonLayout)
         self.setLayout(layout)
 
         fm = QtGui.QFontMetrics(self.font())
-        self.resize(self.scene.width() + fm.width(" Delete... ") + 50,
-                    self.scene.height() + 50)
+        self.resize(int(self.scene.width() + fm.width(" Delete... ")+ 50),int(self.scene.height() + 50))
         self.setWindowTitle("Page Designer")
 
 
@@ -114,7 +113,7 @@ class MainForm(QtGui.QDialog):
         self.borders = []
         rect = QtCore.QRectF(0, 0, PageSize[0], PageSize[1])
         #print "rect type and qtcore.qt.yellow type:\n ", type(rect), type(QtCore.Qt.yellow)
-        pen=QtGui.QPen(QtCore.Qt.yellow) 
+        pen=QtGui.QPen(QtCore.Qt.GlobalColor.black)
         self.borders.append(self.scene.addRect(rect, pen))
         margin = 5.25 * PointSize
         
@@ -135,17 +134,17 @@ class MainForm(QtGui.QDialog):
 
     def accept(self):
         self.offerSave()
-        QtGui.QDialog.accept(self)
+        QtWidgets.QDialog.accept(self)
 
 
     def offerSave(self):
         #print "offerSave Dirty? {0}".format(Dirty)
         
-        if (Dirty and QtGui.QMessageBox.question(self,
+        if (Dirty and QtWidgets.QMessageBox.question(self,
                             "Page Designer - Unsaved Changes",
                             "Save unsaved changes?",
-                            QtGui.QMessageBox.Yes|QtGui.QMessageBox.No) ==
-            QtGui.QMessageBox.Yes):
+                            QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No) ==
+            QtWidgets.QMessageBox.Yes):
             self.save()
 
 
@@ -176,7 +175,7 @@ class MainForm(QtGui.QDialog):
 
     def addPixmap(self):
         path = QtCore.QFileInfo(self.filename).path() if self.filename else "."
-        fname = QtGui.QFileDialog.getOpenFileName(self,
+        fname = QtWidgets.QFileDialog.getOpenFileName(self,
                 "Page Designer - Add Pixmap", path,
                 "Pixmap Files (*.bmp *.jpg *.png *.xpm)")[0]
         if not fname:
@@ -186,9 +185,9 @@ class MainForm(QtGui.QDialog):
 
     def createPixmapItem(self, pixmap, position, transform=QtGui.QTransform()):
         #print "Painting pixmap"
-        item = QtGui.QGraphicsPixmapItem(pixmap)
-        item.setFlags(QtGui.QGraphicsItem.ItemIsSelectable|
-                      QtGui.QGraphicsItem.ItemIsMovable)
+        item = QtWidgets.QGraphicsPixmapItem(pixmap)
+        item.setFlags(QtWidgets.QGraphicsItem.ItemIsSelectable|
+                      QtWidgets.QGraphicsItem.ItemIsMovable)
         item.setPos(position)
         item.setTransform(transform)
         self.scene.clearSelection()
@@ -235,17 +234,18 @@ class MainForm(QtGui.QDialog):
 
     def rotate(self):
         for item in self.scene.selectedItems():
-            item.rotate(30)
+            item.setRotation(item.rotation() + 30)
+
 
 
     def delete(self):
         items = self.scene.selectedItems()
-        if (len(items) and QtGui.QMessageBox.question(self,
+        if (len(items) and QtWidgets.QMessageBox.question(self,
                 "Page Designer - Delete",
                 "Delete {} item{}?".format(len(items),
                 "s" if len(items) != 1 else ""),
-                QtGui.QMessageBox.Yes|QtGui.QMessageBox.No) ==
-                QtGui.QMessageBox.Yes):
+                QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No) ==
+                QtWidgets.QMessageBox.Yes):
             while items:
                 item = items.pop()
                 self.scene.removeItem(item)
@@ -256,7 +256,7 @@ class MainForm(QtGui.QDialog):
 
 
     def print_(self):
-        dialog = QtGui.QPrintDialog(self.printer)
+        dialog = QtPrintSupport.QPrintDialog(self.printer)
         if dialog.exec_():
             painter = QtGui.QPainter(self.printer)
             painter.setRenderHint(QtGui.QPainter.Antialiasing)
@@ -270,7 +270,7 @@ class MainForm(QtGui.QDialog):
     def open(self):
         self.offerSave()
         path = QtCore.QFileInfo(self.filename).path() if self.filename else "."
-        fname = QtGui.QFileDialog.getOpenFileName(self,
+        fname = QtWidgets.QFileDialog.getOpenFileName(self,
                 "Page Designer - Open", path,
                 "Page Designer Files (*.pgd)")[0]
         if not fname:
@@ -311,7 +311,7 @@ class MainForm(QtGui.QDialog):
     def save(self):
         if not self.filename:
             path = "."
-            fname = QtGui.QFileDialog.getSaveFileName(self,
+            fname = QtWidgets.QFileDialog.getSaveFileName(self,
                     "Page Designer - Save As", path,
                     "Page Designer Files (*.pgd)")[0]
             #print "save: fname, type: \n", fname, ",", type(fname)
@@ -359,7 +359,7 @@ class MainForm(QtGui.QDialog):
             rect = QtCore.QRectF()
             stream >> rect
             style = QtCore.Qt.PenStyle(stream.readInt16())
-            BoxItem(position, self.scene, style, rect, transform)
+            BoxItem(position, self.scene, rect,transform,style,)
         elif type == "Pixmap":
             pixmap = QtGui.QPixmap()
             stream >> pixmap
@@ -367,12 +367,12 @@ class MainForm(QtGui.QDialog):
 
 
     def writeItemToStream(self, stream, item):
-        if isinstance(item, QtGui.QGraphicsTextItem):
+        if isinstance(item, QtWidgets.QGraphicsTextItem):
             stream.writeQString("Text")
             stream << item.pos() << item.transform()
             stream.writeQString(item.toPlainText())
             stream << item.font()
-        elif isinstance(item, QtGui.QGraphicsPixmapItem):
+        elif isinstance(item, QtWidgets.QGraphicsPixmapItem):
             stream.writeQString("Pixmap")
             stream << item.pos() << item.transform() << item.pixmap()
         elif isinstance(item, BoxItem):
@@ -381,40 +381,40 @@ class MainForm(QtGui.QDialog):
             stream.writeInt16(item.style)
             
             
-class TextItemDlg(QtGui.QDialog):
+class TextItemDlg(QtWidgets.QDialog):
 
     def __init__(self, item=None, position=None, scene=None, parent=None):
-        QtGui.QDialog.__init__(self, parent)
+        QtWidgets.QDialog.__init__(self, parent)
 
         self.item = item
         self.position = position
         self.scene = scene
 
-        self.editor = QtGui.QTextEdit()
+        self.editor = QtWidgets.QTextEdit()
         self.editor.setAcceptRichText(False)
         self.editor.setTabChangesFocus(True)
-        editorLabel = QtGui.QLabel("&Text:")
+        editorLabel = QtWidgets.QLabel("&Text:")
         editorLabel.setBuddy(self.editor)
-        self.fontComboBox = QtGui.QFontComboBox()
+        self.fontComboBox = QtWidgets.QFontComboBox()
         self.fontComboBox.setCurrentFont(QtGui.QFont("Times", PointSize))
-        fontLabel = QtGui.QLabel("&Font:")
+        fontLabel = QtWidgets.QLabel("&Font:")
         fontLabel.setBuddy(self.fontComboBox)
-        self.fontSpinBox = QtGui.QSpinBox()
+        self.fontSpinBox = QtWidgets.QSpinBox()
         self.fontSpinBox.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
         self.fontSpinBox.setRange(6, 280)
         self.fontSpinBox.setValue(PointSize)
-        fontSizeLabel = QtGui.QLabel("&Size:")
+        fontSizeLabel = QtWidgets.QLabel("&Size:")
         fontSizeLabel.setBuddy(self.fontSpinBox)
-        self.buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok|
-                                          QtGui.QDialogButtonBox.Cancel)
-        self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(False)
+        self.buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok|
+                                          QtWidgets.QDialogButtonBox.Cancel)
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(False)
 
         if self.item is not None:
             self.editor.setPlainText(self.item.toPlainText())
             self.fontComboBox.setCurrentFont(self.item.font())
             self.fontSpinBox.setValue(self.item.font().pointSize())
 
-        layout = QtGui.QGridLayout()
+        layout = QtWidgets.QGridLayout()
         layout.addWidget(editorLabel, 0, 0)
         layout.addWidget(self.editor, 1, 0, 1, 6)
         layout.addWidget(fontLabel, 2, 0)
@@ -439,7 +439,7 @@ class TextItemDlg(QtGui.QDialog):
         font = self.fontComboBox.currentFont()
         font.setPointSize(self.fontSpinBox.value())
         self.editor.document().setDefaultFont(font)
-        self.buttonBox.button(QtGui.QDialogButtonBox.Ok).setEnabled(
+        self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setEnabled(
                 bool(self.editor.toPlainText()))
 
 
@@ -454,16 +454,16 @@ class TextItemDlg(QtGui.QDialog):
         global Dirty
         Dirty = True
         #print "Got dirty when accepting textitemdlg"
-        QtGui.QDialog.accept(self)
+        QtWidgets.QDialog.accept(self)
 
 
-class TextItem(QtGui.QGraphicsTextItem):
+class TextItem(QtWidgets.QGraphicsTextItem):
 
     def __init__(self, text, position, scene,
                 font=QtGui.QFont("Times", PointSize), transform=QtGui.QTransform()):
-        QtGui.QGraphicsTextItem.__init__(self, text)
-        self.setFlags(QtGui.QGraphicsItem.ItemIsSelectable|
-                      QtGui.QGraphicsItem.ItemIsMovable)
+        QtWidgets.QGraphicsTextItem.__init__(self, text)
+        self.setFlags(QtWidgets.QGraphicsItem.ItemIsSelectable|
+                      QtWidgets.QGraphicsItem.ItemIsMovable)
         self.setFont(font)
         self.setPos(position)
         #print "TextItem transform: ", transform
@@ -481,11 +481,11 @@ class TextItem(QtGui.QGraphicsTextItem):
 
 
     def itemChange(self, change, variant):
-        if change != QtGui.QGraphicsItem.ItemSelectedChange:
+        if change != QtWidgets.QGraphicsItem.ItemSelectedChange:
             global Dirty
             Dirty = True
             #print "Got dirty in TextItem itemChange"
-        return QtGui.QGraphicsTextItem.itemChange(self, change, variant)
+        return QtWidgets.QGraphicsTextItem.itemChange(self, change, variant)
 
 
     def mouseDoubleClickEvent(self, event):
@@ -493,14 +493,13 @@ class TextItem(QtGui.QGraphicsTextItem):
         dialog.exec_()
 
 
-class BoxItem(QtGui.QGraphicsItem):
+class BoxItem(QtWidgets.QGraphicsItem):
 
-    def __init__(self, position, scene, style=QtCore.Qt.SolidLine,
-                 rect=None, transform=QtGui.QTransform()):
-        QtGui.QGraphicsItem.__init__(self)
-        self.setFlags(QtGui.QGraphicsItem.ItemIsSelectable|
-                      QtGui.QGraphicsItem.ItemIsMovable|
-                      QtGui.QGraphicsItem.ItemIsFocusable)
+    def __init__(self, position, scene,rect=None, transform=QtGui.QTransform(),style=QtCore.Qt.SolidLine):
+        QtWidgets.QGraphicsItem.__init__(self)
+        self.setFlags(QtWidgets.QGraphicsItem.ItemIsSelectable|
+                      QtWidgets.QGraphicsItem.ItemIsMovable|
+                      QtWidgets.QGraphicsItem.ItemIsFocusable)
         if rect is None:
             rect = QtCore.QRectF(-10 * PointSize, -PointSize, 20 * PointSize,
                           2 * PointSize)
@@ -530,23 +529,23 @@ class BoxItem(QtGui.QGraphicsItem):
         pen = QtGui.QPen(self.style)
         pen.setColor(QtCore.Qt.black)
         pen.setWidth(1)
-        if option.state & QtGui.QStyle.State_Selected:
+        if option.state & QtWidgets.QStyle.State_Selected:
             pen.setColor(QtCore.Qt.blue)
         painter.setPen(pen)
         painter.drawRect(self.rect)
 
 
     def itemChange(self, change, variant):
-        if change != QtGui.QGraphicsItem.ItemSelectedChange:
+        if change != QtWidgets.QGraphicsItem.ItemSelectedChange:
             global Dirty
             Dirty = True
             #print "Got dirty in BoxItem itemChange"
-        return QtGui.QGraphicsItem.itemChange(self, change, variant)  #this is seriously weird
+        return QtWidgets.QGraphicsItem.itemChange(self, change, variant)  #this is seriously weird
 
 
     def contextMenuEvent(self, event):
         wrapped = []
-        menu = QtGui.QMenu(self.parentWidget())
+        menu = QtWidgets.QMenu(self.parentWidget())
         for text, param in (
                 ("&Solid", QtCore.Qt.SolidLine),
                 ("&Dashed", QtCore.Qt.DashLine),
@@ -589,15 +588,12 @@ class BoxItem(QtGui.QGraphicsItem):
             Dirty = True
             #print "Got dirty when changing box w/key presses"
         else:
-            QtGui.QGraphicsItem.keyPressEvent(self, event)
-            
-            
+            QtWidgets.QGraphicsItem.keyPressEvent(self, event)
 
 
-
-app = QtGui.QApplication(sys.argv)
+app = QtWidgets.QApplication(sys.argv)
 form = MainForm()
-rect = QtGui.QApplication.desktop().availableGeometry()
+rect = QtWidgets.QApplication.desktop().availableGeometry()
 form.resize(int(rect.width() * 0.6), int(rect.height() * 0.9))
 form.show()
 app.exec_()

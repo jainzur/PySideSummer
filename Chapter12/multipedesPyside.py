@@ -173,9 +173,9 @@ class MainForm(QtWidgets.QDialog):
         self.view.setRenderHint(QtGui.QPainter.Antialiasing)
         self.view.setScene(self.scene)
         self.view.setFocusPolicy(QtCore.Qt.NoFocus)
-        zoomSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        zoomSlider.setRange(5, 200)
-        zoomSlider.setValue(100)
+        self.zoomSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.zoomSlider.setRange(5, 200)
+        self.zoomSlider.setValue(100)
         self.pauseButton = QtWidgets.QPushButton("Pa&use")
         quitButton = QtWidgets.QPushButton("&Quit")
         quitButton.setFocusPolicy(QtCore.Qt.NoFocus)
@@ -184,12 +184,12 @@ class MainForm(QtWidgets.QDialog):
         layout.addWidget(self.view)
         bottomLayout = QtWidgets.QHBoxLayout()
         bottomLayout.addWidget(self.pauseButton)
-        bottomLayout.addWidget(zoomSlider)
+        bottomLayout.addWidget(self.zoomSlider)
         bottomLayout.addWidget(quitButton)
         layout.addLayout(bottomLayout)
         self.setLayout(layout)
 
-        zoomSlider.valueChanged.connect(self.zoom)
+        self.zoomSlider.valueChanged.connect(self.zoom)
         self.pauseButton.clicked.connect(self.pauseOrResume)
         quitButton.clicked.connect(self.accept)
 
@@ -255,6 +255,14 @@ class MainForm(QtWidgets.QDialog):
             item = dead.pop()
             self.scene.removeItem(item)
             del item
+
+
+    def wheelEvent(self, a0: QtGui.QWheelEvent) -> None:
+        y=a0.angleDelta().y()
+        if y>0:
+            self.zoomSlider.setValue(self.zoomSlider.value()+5)
+        else:
+            self.zoomSlider.setValue(self.zoomSlider.value() - 5)
 
 
 app = QtWidgets.QApplication(sys.argv)
